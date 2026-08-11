@@ -1,19 +1,19 @@
 import os
 from flask import Flask, request, jsonify
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 
-# Gemini API 설정
+# Gemini API 클라이언트 초기화
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 SYSTEM_PROMPT = "너는 '애틀랜타 KAL 등산회'의 AI Hiking 대장이야. 질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
 
 @app.route('/', methods=['GET'])
 def home():
-    return "KAL Hiking Bot (Gemini 1.5 Flash Version) is running!"
+    return "KAL Hiking Bot (Gemini 2.5 Flash Version) is running!"
 
 @app.route('/kakao', methods=['POST'])
 def kakao_skill():
@@ -25,18 +25,20 @@ def kakao_skill():
         if not user_message:
             user_message = "안녕하세요"
 
-        if not GEMINI_API_KEY:
+        if not client:
             return make_kakao_response("GEMINI API 키 설정 확인이 필요합니다.")
 
-        # Gemini 1.5 Flash 모델 사용
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
-            system_instruction=SYSTEM_PROMPT
+        # 최신 SDK 규격에 맞춘 Gemini 2.5 Flash 호출 및 속도 제한 설정
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_message,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                max_output_tokens=150,  # 카카오톡 5초 타임아웃 방지용
+            ),
         )
 
-        response = model.generate_content(user_message)
         ai_reply = response.text.strip()
-        
         return make_kakao_response(ai_reply)
 
     except Exception as e:
