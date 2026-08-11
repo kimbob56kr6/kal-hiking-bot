@@ -9,7 +9,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-SYSTEM_PROMPT = "너는 '애틀랜타 KAL 등산회'의 AI 등산 대장이야. 질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
+SYSTEM_PROMPT = "너는 '애틀랜타 KAL 등산회'의 AI Hiking 대장이야. 질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
 
 @app.route('/', methods=['GET'])
 def home():
@@ -41,7 +41,7 @@ def kakao_skill():
 
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return make_kakao_response("KAL 등산회 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
+        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
 
 def make_kakao_response(text):
     return jsonify({
