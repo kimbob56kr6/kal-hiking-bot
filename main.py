@@ -1,18 +1,19 @@
 import os
 from flask import Flask, request, jsonify
-from google import genai
+import google.generativeai as genai
 
 app = Flask(__name__)
 
-# Gemini API 클라이언트 설정
+# Gemini API 설정
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 SYSTEM_PROMPT = "너는 '애틀랜타 KAL 등산회'의 AI 등산 대장이야. 질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
 
 @app.route('/', methods=['GET'])
 def home():
-    return "KAL Hiking Bot (Gemini Version) is running!"
+    return "KAL Hiking Bot (Gemini 1.5 Flash Version) is running!"
 
 @app.route('/kakao', methods=['POST'])
 def kakao_skill():
@@ -24,17 +25,18 @@ def kakao_skill():
         if not user_message:
             user_message = "안녕하세요"
 
-        if not client:
+        if not GEMINI_API_KEY:
             return make_kakao_response("GEMINI API 키 설정 확인이 필요합니다.")
 
-        # Gemini API 호출 (안정적인 기본 구조 적용)
-        prompt = f"{SYSTEM_PROMPT}\n\n사용자 질문: {user_message}"
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
+        # Gemini 1.5 Flash 모델 사용
+        model = genai.GenerativeModel(
+            model_name='gemini-1.5-flash',
+            system_instruction=SYSTEM_PROMPT
         )
 
+        response = model.generate_content(user_message)
         ai_reply = response.text.strip()
+        
         return make_kakao_response(ai_reply)
 
     except Exception as e:
