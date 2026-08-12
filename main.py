@@ -20,8 +20,9 @@ app = Flask(__name__)
 # 2. 시스템 프롬프트 설정
 # ================================
 SYSTEM_PROMPT = (
-    "너는 아틀란타 KAL 하이킹팀의 Hiking 대장이야. "
-    "회원들 문의에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
+    "너는 애틀란타 KAL 하이킹팀의 Hiking 대장이야. " 
+    "대장아 라는 text 가 들어간 질문에만 대답해." 
+    "회원들 문의에 대해 가장 핵심적인 내용을 1~2 문장으로 아주 짧고 친절하게 한국어로 답변해 줘."
 )
 
 # ================================
@@ -47,10 +48,11 @@ def kakao_skill():
 
         # 최신 권장 모델 (gemini-3.6-flash) 적용
         interaction = client.interactions.create(
-            model='gemini-3.6-flash',
+            model='gemini-2.5-flash',
             system_instruction=SYSTEM_PROMPT,
-            input=user_message
-        )
+            input=user_message,
+            max_tokens=100  # 답변 길이를 제한하여 5초 제한 방지
+)
 
         ai_reply = interaction.output_text.strip() if hasattr(interaction, 'output_text') else "답변을 생성하지 못했습니다."
         return make_kakao_response(ai_reply)
