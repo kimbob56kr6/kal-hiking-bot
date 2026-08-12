@@ -1,64 +1,67 @@
 import os
-from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-app = Flask(__name__)
+# ================================
+# 1. 환경 변수 로드
+# ================================
+load_dotenv()
 
-# Gemini API 클라이언트 초기화
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+# Gemini SDK 표준 환경 변수명 사용
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
+if not GEMINI_API_KEY:
+    print("오류: .env 파일에서 GEMINI_API_KEY를 찾을 수 없습니다.")
+    exit(1)
 
-SYSTEM_PROMPT = "너는 '애틀랜타 KAL 등산회'의 AI Hiking 대장이야. 질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
+# ================================
+# 2. Gemini 클라이언트 초기화
+# ================================
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-@app.route('/', methods=['GET'])
-def home():
-    return "KAL Hiking Bot (Gemini 2.5 Flash Version) is running!"
+# ================================
+# 3. 시스템 프롬프트 설정
+# ================================
+SYSTEM_PROMPT = (
+    "너는 애틀랜타 KAL 등산회의 AI Hiking 대장이야. "
+    "질문에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
+)
 
-@app.route('/kakao', methods=['POST'])
-def kakao_skill():
-    try:
-        req_data = request.get_json() or {}
-        
-        # 카카오톡 메시지 추출
-        user_message = req_data.get('userRequest', {}).get('utterance', '').strip()
-        if not user_message:
-            user_message = "안녕하세요"
+# ================================
+# 4. 대화 테스트 함수
+# ================================
+def test_chat():
+    print("=== KAL 등산회 AI 대장 로컬 테스트 시작 ===")
+    print("종료하려면 'exit' 또는 'quit'을 입력하세요.\n")
 
-        if not client:
-            return make_kakao_response("GEMINI API 키 설정 확인이 필요합니다.")
+    while True:
+        user_input = input("사용자: ").strip()
 
-        # 최신 SDK 규격에 맞춘 Gemini 2.5 Flash 호출 및 속도 제한 설정
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=user_message,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=150,  # 카카오톡 5초 타임아웃 방지용
-            ),
-        )
+        if not user_input:
+            continue
 
-        ai_reply = response.text.strip()
-        return make_kakao_response(ai_reply)
+        if user_input.lower() in ['exit', 'quit']:
+            print("테스트를 종료합니다.")
+            break
 
-    except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
+        try:
+            # 최신 SDK 올바른 호출 방식
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=user_input,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    max_output_tokens=150
+                )
+            )
 
-def make_kakao_response(text):
-    return jsonify({
-        "version": "2.0",
-        "template": {
-            "outputs": [
-                {
-                    "simpleText": {
-                        "text": text
-                    }
-                }
-            ]
-        }
-    })
+            print(f"AI 대장: {response.text.strip()}\n")
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+        except Exception as e:
+            print("오류 발생:", e)
+
+# ================================
+# 5. 실행 시작
+# ================================
+if __name__ == "__main__":
+    test_chat()
