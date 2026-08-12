@@ -45,6 +45,8 @@ def kakao_skill():
         if not client:
             return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
 
+        
+        
         # 최신 권장 모델 (gemini-3.6-flash) 적용
         interaction = client.interactions.create(
             model='gemini-3.6-flash',
