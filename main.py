@@ -51,8 +51,9 @@ def kakao_skill():
         if not client:
             return make_kakao_response("[오류] Gemini Client 초기화에 실패했습니다.")
 
+     # gemini-2.0-flash 대신 최신 gemini-2.5-flash 적용
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-2.5-flash',
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
@@ -60,6 +61,8 @@ def kakao_skill():
                 temperature=0.5
             )
         )
+        
+      
 
         ai_reply = response.text.strip() if (response and hasattr(response, 'text') and response.text) else "답변 생성 실패"
         return make_kakao_response(ai_reply)
