@@ -5,14 +5,11 @@ from google import genai
 from google.genai import types
 
 # ================================
-# 1. 환경 변수 로드 (.env 및 서버 환경변수 대응)
+# 1. 환경 변수 로드
 # ================================
 load_dotenv()
 
-# 표준 GEMINI_API_KEY 또는 GENAI_API_KEY 모두 지원
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
-
-# 클라이언트 초기화
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app = Flask(__name__)
@@ -29,6 +26,7 @@ SYSTEM_PROMPT = (
 # 3. 라우트 설정
 # ================================
 
+# UptimeRobot이 5분마다 핑을 보낼 홈 라우트 (서버 웜업 유지용)
 @app.route('/', methods=['GET'])
 def home():
     return "KAL Hiking Bot is running!"
@@ -46,13 +44,13 @@ def kakao_skill():
         if not client:
             return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
 
-        # 지정해주신 정확한 구문 및 속도 최적화 적용
+        # gemini-3.6-flash 적용 및 빠른 응답 설정
         response = client.models.generate_content(
             model='gemini-3.6-flash',
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=80,  # 카카오톡 5초 제한 대응 속도 최적화
+                max_output_tokens=80,
                 temperature=0.5
             )
         )
@@ -62,8 +60,7 @@ def kakao_skill():
 
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        # Render 서버 로그에서 정확한 에러 원인을 파악하기 위해 에러 내용 일부 출력
-        return make_kakao_response(f"아틀란타 KAL 하이킹 대장 로봇입니다. (오류: {str(e)[:50]})")
+        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
 
 # 카카오톡 응답 규격 포맷 함수
 def make_kakao_response(text):
