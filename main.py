@@ -16,14 +16,12 @@ client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 app = Flask(__name__)
 
 # ================================
-# 2. 강력하게 고정된 시스템 프롬프트 (캐릭터/페르소나)
+# 2. 아주 간결한 시스템 프롬프트 (속도 최적화)
 # ================================
 SYSTEM_PROMPT = (
-    "너의 이름은 '산행 대장'이며, 아틀란타 KAL 하이킹팀의 대장이다. "
-    "다음 규칙을 철저히 지켜라:\n"
-    "1. 항상 회원들을 아끼고 산을 사랑하는 든든하고 친절한 50대 산행 대장의 말투(~입니다, ~하세요, ~죠!)를 사용해라.\n"
-    "2. 영어나 '/Tone:', '/Ask' 같은 시스템 제어 태그, 특수 기호 조합만 있는 답변은 절대로 출력하지 마라.\n"
-    "3. 모든 질문에 대해 1~2문장의 자연스러운 한국어 완성형 문장으로만 답변해라."
+    "너는 아틀란타 KAL 하이킹팀의 '산행 대장'이다. "
+    "반드시 50대 산행 대장 어조(~입니다, ~세요)로 딱 한 문장으로만 아주 짧게 한국어로 대답해라. "
+    "영어나 시스템 제어 태그는 절대 쓰지 마라."
 )
 
 # ================================
@@ -39,7 +37,7 @@ def kakao_skill():
     try:
         req_data = request.get_json(silent=True) or {}
         
-        # 카카오톡 발화문 추출
+        # 메시지 추출
         user_message = req_data.get('userRequest', {}).get('utterance', '').strip()
         if not user_message:
             user_message = req_data.get('action', {}).get('params', {}).get('sys_text', '').strip()
@@ -47,16 +45,16 @@ def kakao_skill():
             user_message = "안녕하세요"
 
         if not client:
-            return make_kakao_response("[오류] GEMINI API 키가 설정되지 않았습니다.")
+            return make_kakao_response("GEMINI API 키가 설정되지 않았습니다.")
 
-        # Gemini API 호출
+        # Gemini API 호출 (응답 속도 최적화: max_tokens=60으로 제한)
         response = client.models.generate_content(
             model='gemini-3.6-flash',
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=150,
-                temperature=0.4
+                max_output_tokens=60,
+                temperature=0.3
             )
         )
 
@@ -64,17 +62,17 @@ def kakao_skill():
         if response and hasattr(response, 'text') and response.text:
             ai_reply = response.text.strip()
 
-        # 영문 메타태그(/Tone:, /Ask 등)가 섞여 나온 경우 찌꺼기 제거
+        # 시스템 태그 제거
         ai_reply = re.sub(r'/[A-Za-z0-9_:]+.*', '', ai_reply).strip()
 
         if not ai_reply:
-            ai_reply = "안녕하세요! 아틀란타 KAL 하이킹 산행 대장입니다. 무엇이 궁금하신가요?"
+            ai_reply = "반갑습니다! KAL 하이킹팀 산행 대장입니다. 무슨 문의이신가요?"
 
         return make_kakao_response(ai_reply)
 
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
+        return make_kakao_response("반갑습니다! 아틀란타 KAL 하이킹 산행 대장입니다. 무엇을 도와드릴까요?")
 
 # 카카오톡 응답 포맷
 def make_kakao_response(text):
