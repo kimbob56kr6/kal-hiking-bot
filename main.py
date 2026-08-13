@@ -9,7 +9,7 @@ from google.genai import types
 # ================================
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app = Flask(__name__)
@@ -59,7 +59,7 @@ def kakao_skill():
 
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
+        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세.")
 
 # 카카오톡 응답 규격 포맷 함수
 def make_kakao_response(text):
