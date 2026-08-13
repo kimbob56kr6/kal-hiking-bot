@@ -43,9 +43,9 @@ def kakao_skill():
         if not client:
             return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
 
-        # 최신 권장 모델 (gemini-3.6-flash) 적용
+ # gemini-3.6-flash 대신 지원되는 표준 모델명 사용
         response = client.models.generate_content(
-            model='gemini-3.6-flash',
+            model='gemini-2.0-flash',
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
