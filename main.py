@@ -23,7 +23,7 @@ SYSTEM_PROMPT = (
 )
 
 # ================================
-# 3. 라우트 설정
+# 3. 라우트 및 카카오 스킬 설정
 # ================================
 
 @app.route('/', methods=['GET'])
@@ -33,10 +33,13 @@ def home():
 @app.route('/kakao', methods=['POST'])
 def kakao_skill():
     try:
-        req_data = request.get_json() or {}
+        req_data = request.get_json(silent=True) or {}
         
-        # 카카오톡 입력 메시지 추출
+        # 카카오톡 발화문(utterance) 추출
         user_message = req_data.get('userRequest', {}).get('utterance', '').strip()
+        if not user_message:
+            # fallback/bot block 기본 발화 예외 처리
+            user_message = req_data.get('action', {}).get('params', {}).get('sys_text', '').strip()
         if not user_message:
             user_message = "안녕하세요"
 
@@ -49,32 +52,33 @@ def kakao_skill():
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=80,
+                max_output_tokens=150,
                 temperature=0.5
             )
         )
 
-        # 응답 텍스트 추출 및 파싱
+        # Gemini 응답 텍스트 파싱
         ai_reply = ""
-        if response and hasattr(response, 'text') and response.text:
-            ai_reply = response.text.strip()
-        elif response and hasattr(response, 'candidates') and response.candidates:
+        if response:
             try:
-                ai_reply = response.candidates[0].content.parts[0].text.strip()
-            except Exception:
-                ai_reply = ""
+                if hasattr(response, 'text') and response.text:
+                    ai_reply = response.text.strip()
+                elif hasattr(response, 'candidates') and response.candidates:
+                    parts = response.candidates[0].content.parts
+                    ai_reply = "".join([p.text for p in parts if hasattr(p, 'text')]).strip()
+            except Exception as parse_err:
+                print(f"Parsing error: {parse_err}")
 
         if not ai_reply:
-            ai_reply = "답변 생성 실패 (응답 데이터가 비어 있음)"
+            ai_reply = "안녕하세요! 아틀란타 KAL 하이킹 대장입니다. 무엇이 궁금하신가요?"
 
         return make_kakao_response(ai_reply)
 
     except Exception as e:
-        # 발생한 에러 메시지를 카카오톡 응답으로 직접 반환
         print(f"Gemini API Error: {e}")
-        return make_kakao_response(f"[에러 상]: {str(e)}")
+        return make_kakao_response(f"[에러 발생]: {str(e)}")
 
-# 카카오톡 응답 규격 포맷 함수
+# 카카오톡 i Open Builder 스킬 응답 규격 JSON
 def make_kakao_response(text):
     return jsonify({
         "version": "2.0",
