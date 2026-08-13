@@ -41,9 +41,9 @@ def kakao_skill():
             user_message = "안녕하세요"
 
         if not client:
-            return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
+            return make_kakao_response("[오류] GEMINI API 키가 설정되지 않았습니다.")
 
-        # 요청하신 모델 호출 형태 적용
+        # Gemini API 호출
         response = client.models.generate_content(
             model='gemini-3.6-flash',
             contents=user_message,
@@ -54,7 +54,7 @@ def kakao_skill():
             )
         )
 
-        # 응답 텍스트 파싱 안전 처리
+        # 응답 텍스트 추출 및 파싱
         ai_reply = ""
         if response and hasattr(response, 'text') and response.text:
             ai_reply = response.text.strip()
@@ -65,16 +65,14 @@ def kakao_skill():
                 ai_reply = ""
 
         if not ai_reply:
-            ai_reply = "안녕하세요! KAL 하이킹 대장입니다. 무엇을 도와드릴까요?"
+            ai_reply = "답변 생성 실패 (응답 데이터가 비어 있음)"
 
         return make_kakao_response(ai_reply)
 
     except Exception as e:
-        except Exception as e:
+        # 발생한 에러 메시지를 카카오톡 응답으로 직접 반환
         print(f"Gemini API Error: {e}")
-        # 실제 예외 메시지(e)를 그대로 반환
-        return make_kakao_response(f"[에러 상세]: {str(e)}")
-    
+        return make_kakao_response(f"[에러 상]: {str(e)}")
 
 # 카카오톡 응답 규격 포맷 함수
 def make_kakao_response(text):
