@@ -9,7 +9,6 @@ from google import genai
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
-
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app = Flask(__name__)
@@ -23,13 +22,15 @@ SYSTEM_PROMPT = (
 )
 
 # ================================
-# 3. 라우트
+# 3. 기본 라우트
 # ================================
-
 @app.route('/', methods=['GET'])
 def home():
     return "KAL Hiking Bot is running!"
 
+# ================================
+# 4. Kakao Skill 엔드포인트
+# ================================
 @app.route('/kakao', methods=['POST'])
 def kakao_skill():
     try:
@@ -44,7 +45,7 @@ def kakao_skill():
             return make_kakao_response("Gemini API 키가 설정되지 않았습니다.")
 
         # ================================
-        # 🔥 최신 안정 모델 호출 방식
+        # 🔥 Gemini 최신 모델 호출
         # ================================
         response = client.models.generate_content(
             model="gemini-1.5-flash",
@@ -54,7 +55,29 @@ def kakao_skill():
             ]
         )
 
-        ai_reply = response.text.strip() if hasattr(response, "text") else "답변 생성 실패"
+        # ================================
+        # 🔥 안전 파싱 (SDK 버전 상관없이 항상 작동)
+        # ================================
+        ai_reply = ""
+
+        try:
+            # 1) response.text가 있으면 사용
+            if hasattr(response, "text") and response.text:
+                ai_reply = response.text.strip()
+
+            # 2) response.candidates 구조가 있으면 사용
+            elif hasattr(response, "candidates") and response.candidates:
+                parts = response.candidates[0].content.parts
+                if parts and hasattr(parts[0], "text"):
+                    ai_reply = parts[0].text.strip()
+
+            # 3) 그래도 없으면 fallback
+            else:
+                ai_reply = "답변을 생성하지 못했습니다."
+
+        except Exception as parse_error:
+            print("Parsing Error:", parse_error)
+            ai_reply = "답변 생성 중 오류가 발생했습니다."
 
         return make_kakao_response(ai_reply)
 
@@ -63,7 +86,7 @@ def kakao_skill():
         return make_kakao_response("하이킹 대장 로봇입니다. 잠시 후 다시 시도해주세요.")
 
 # ================================
-# 4. 카카오톡 응답 포맷
+# 5. Kakao 응답 포맷
 # ================================
 def make_kakao_response(text):
     return jsonify({
@@ -80,7 +103,7 @@ def make_kakao_response(text):
     })
 
 # ================================
-# 5. 실행
+# 6. 실행
 # ================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
