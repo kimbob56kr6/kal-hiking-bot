@@ -45,7 +45,7 @@ def kakao_skill():
             return make_kakao_response("Gemini API 키가 설정되지 않았습니다.")
 
         # ================================
-        # 🔥 interactions.create() 초고속 최적화 (extra_body 사용)
+        # 🔥 interactions.create() 최적화 (SDK 완전 호환)
         # ================================
         interaction = client.interactions.create(
             model="gemini-3.6-flash",
@@ -56,8 +56,8 @@ def kakao_skill():
                 "generation_config": {
                     "temperature": 0.2,
                     "top_p": 0.8,
-                    "max_output_tokens": 60,
-                    "candidate_count": 1
+                    "max_output_tokens": 60
+                    # candidate_count 제거 (SDK가 지원 안 함)
                 }
             }
         )
