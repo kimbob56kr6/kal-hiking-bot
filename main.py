@@ -5,12 +5,18 @@ from google import genai
 from google.genai import types
 
 # ================================
-# 1. 환경 변수 로드 (.env 및 서버 환경변수 대응)
+# 1. 환경 변수 로드
 # ================================
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
+
+# 클라이언트 초기화
+try:
+    client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+except Exception as init_err:
+    client = None
+    print(f"Client init error: {init_err}")
 
 app = Flask(__name__)
 
@@ -35,15 +41,16 @@ def kakao_skill():
     try:
         req_data = request.get_json() or {}
         
-        # 카카오톡 입력 메시지 추출
         user_message = req_data.get('userRequest', {}).get('utterance', '').strip()
         if not user_message:
             user_message = "안녕하세요"
 
-        if not client:
-            return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
+        if not GEMINI_API_KEY:
+            return make_kakao_response("[오류] Render에 GEMINI_API_KEY 환경변수가 설정되지 않았습니다.")
 
-        # 올바른 표준 모델명(gemini-2.0-flash) 사용
+        if not client:
+            return make_kakao_response("[오류] Gemini Client 초기화에 실패했습니다.")
+
         response = client.models.generate_content(
             model='gemini-2.0-flash',
             contents=user_message,
@@ -54,14 +61,13 @@ def kakao_skill():
             )
         )
 
-        ai_reply = response.text.strip() if (response and hasattr(response, 'text') and response.text) else "답변을 생성하지 못했습니다."
+        ai_reply = response.text.strip() if (response and hasattr(response, 'text') and response.text) else "답변 생성 실패"
         return make_kakao_response(ai_reply)
 
     except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세.")
+        # 에러 내용을 카카오톡 메시지로 직접 출력
+        return make_kakao_response(f"[API 에러 발생]: {str(e)}")
 
-# 카카오톡 응답 규격 포맷 함수
 def make_kakao_response(text):
     return jsonify({
         "version": "2.0",
@@ -76,9 +82,6 @@ def make_kakao_response(text):
         }
     })
 
-# ================================
-# 4. 실행 시작
-# ================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
