@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 # ================================
-# 1. 환경 변수 로드
+# 1. 환경 변수 로드 (.env 및 서버 환경변수 대응)
 # ================================
 load_dotenv()
 
@@ -43,7 +43,7 @@ def kakao_skill():
         if not client:
             return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
 
- # gemini-3.6-flash 대신 지원되는 표준 모델명 사용
+        # 올바른 표준 모델명(gemini-2.0-flash) 사용
         response = client.models.generate_content(
             model='gemini-2.0-flash',
             contents=user_message,
