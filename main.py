@@ -56,4 +56,57 @@ def kakao_skill():
                 "temperature": 0.2,                # 계산량 감소 → 속도 증가
                 "max_output_tokens": 60,           # 짧은 답변 → 속도 증가
                 "top_p": 0.8,                      # 샘플링 안정화 → 속도 증가
-                "candidate_count": 1              
+                "candidate_count": 1               # 후보 1개만 생성 → 속도 증가
+            }
+        )
+
+        # ================================
+        # 🔥 안전 파싱 (SDK 버전 상관없이 항상 작동)
+        # ================================
+        ai_reply = ""
+
+        try:
+            if hasattr(interaction, "output_text") and interaction.output_text:
+                ai_reply = interaction.output_text.strip()
+
+            elif hasattr(interaction, "candidates") and interaction.candidates:
+                parts = interaction.candidates[0].content.parts
+                if parts and hasattr(parts[0], "text"):
+                    ai_reply = parts[0].text.strip()
+
+            else:
+                ai_reply = "답변을 생성하지 못했습니다."
+
+        except Exception as parse_error:
+            print("Parsing Error:", parse_error)
+            ai_reply = "답변 생성 중 오류가 발생했습니다."
+
+        return make_kakao_response(ai_reply)
+
+    except Exception as e:
+        print(f"[Gemini Error] {e}")
+        return make_kakao_response("하이킹 대장 로봇입니다. 잠시 후 다시 시도해주세요.")
+
+# ================================
+# 5. Kakao 응답 포맷
+# ================================
+def make_kakao_response(text):
+    return jsonify({
+        "version": "2.0",
+        "template": {
+            "outputs": [
+                {
+                    "simpleText": {
+                        "text": text
+                    }
+                }
+            ]
+        }
+    })
+
+# ================================
+# 6. 실행
+# ================================
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
