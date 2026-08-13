@@ -45,23 +45,25 @@ def kakao_skill():
             return make_kakao_response("Gemini API 키가 설정되지 않았습니다.")
 
         # ================================
-        # 🔥 interactions.create() 초고속 최적화 버전
+        # 🔥 interactions.create() 초고속 최적화 (extra_body 사용)
         # ================================
         interaction = client.interactions.create(
             model="gemini-3.6-flash",
             system_instruction=SYSTEM_PROMPT,
             input=user_message,
-            config={
-                "response_modalities": ["text"],   # 텍스트만 생성 → 속도 증가
-                "temperature": 0.2,                # 계산량 감소 → 속도 증가
-                "max_output_tokens": 60,           # 짧은 답변 → 속도 증가
-                "top_p": 0.8,                      # 샘플링 안정화 → 속도 증가
-                "candidate_count": 1               # 후보 1개만 생성 → 속도 증가
+            extra_body={
+                "response_modalities": ["text"],
+                "generation_config": {
+                    "temperature": 0.2,
+                    "top_p": 0.8,
+                    "max_output_tokens": 60,
+                    "candidate_count": 1
+                }
             }
         )
 
         # ================================
-        # 🔥 안전 파싱 (SDK 버전 상관없이 항상 작동)
+        # 🔥 안전 파싱
         # ================================
         ai_reply = ""
 
