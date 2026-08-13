@@ -70,8 +70,11 @@ def kakao_skill():
         return make_kakao_response(ai_reply)
 
     except Exception as e:
+        except Exception as e:
         print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세.")
+        # 실제 예외 메시지(e)를 그대로 반환
+        return make_kakao_response(f"[에러 상세]: {str(e)}")
+    
 
 # 카카오톡 응답 규격 포맷 함수
 def make_kakao_response(text):
