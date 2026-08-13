@@ -4,28 +4,26 @@ from dotenv import load_dotenv
 from google import genai
 
 # ================================
-# 1. 환경 변수 로드 (.env 및 서버 환경변수 대응)
+# 1. 환경 변수 로드
 # ================================
 load_dotenv()
 
-# 표준 GEMINI_API_KEY 또는 GENAI_API_KEY 모두 지원
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
 
-# 클라이언트 초기화
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app = Flask(__name__)
 
 # ================================
-# 2. 시스템 프롬프트 설정
+# 2. 시스템 프롬프트
 # ================================
 SYSTEM_PROMPT = (
     "너는 아틀란타 KAL 하이킹팀의 Hiking 대장이야. "
-    "회원들 문의에 대해 가장 핵심적인 내용을 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
+    "회원들의 질문에 대해 핵심만 1~2문장으로 아주 짧고 친절하게 한국어로 답변해줘."
 )
 
 # ================================
-# 3. 라우트 설정
+# 3. 라우트
 # ================================
 
 @app.route('/', methods=['GET'])
@@ -36,32 +34,37 @@ def home():
 def kakao_skill():
     try:
         req_data = request.get_json() or {}
-        
-        # 카카오톡 입력 메시지 추출
+
+        # 카카오톡 입력 메시지
         user_message = req_data.get('userRequest', {}).get('utterance', '').strip()
         if not user_message:
             user_message = "안녕하세요"
 
         if not client:
-            return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
+            return make_kakao_response("Gemini API 키가 설정되지 않았습니다.")
 
-        
-        
-        # 최신 권장 모델 (gemini-3.6-flash) 적용
-        interaction = client.interactions.create(
-            model='gemini-3.6-flash',
-            system_instruction=SYSTEM_PROMPT,
-            input=user_message
+        # ================================
+        # 🔥 최신 안정 모델 호출 방식
+        # ================================
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[
+                {"role": "system", "parts": [{"text": SYSTEM_PROMPT}]},
+                {"role": "user", "parts": [{"text": user_message}]}
+            ]
         )
 
-        ai_reply = interaction.output_text.strip() if hasattr(interaction, 'output_text') else "답변을 생성하지 못했습니다."
+        ai_reply = response.text.strip() if hasattr(response, "text") else "답변 생성 실패"
+
         return make_kakao_response(ai_reply)
 
     except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return make_kakao_response("아틀란타 KAL 하이킹 대장 로봇입니다. 잠시 후 다시 질문해 주세요.")
+        print(f"[Gemini Error] {e}")
+        return make_kakao_response("하이킹 대장 로봇입니다. 잠시 후 다시 시도해주세요.")
 
-# 카카오톡 응답 규격 포맷 함수
+# ================================
+# 4. 카카오톡 응답 포맷
+# ================================
 def make_kakao_response(text):
     return jsonify({
         "version": "2.0",
@@ -77,7 +80,7 @@ def make_kakao_response(text):
     })
 
 # ================================
-# 4. 실행 시작
+# 5. 실행
 # ================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
