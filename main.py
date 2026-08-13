@@ -22,14 +22,44 @@ SYSTEM_PROMPT = (
 )
 
 # ================================
-# 3. 기본 라우트
+# 3. 모델 자동 선택 (SDK 버전 호환)
+# ================================
+def pick_model():
+    """
+    Render 서버에 설치된 google-genai SDK 버전에 따라
+    사용 가능한 모델을 자동으로 선택한다.
+    """
+    try:
+        models = client.models.list()
+        names = [m.name for m in models]
+
+        # 최신 모델 우선
+        for preferred in [
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-1.0-flash",
+            "gemini-1.0-pro"
+        ]:
+            if preferred in names:
+                return preferred
+
+        # 아무 모델도 없으면 기본값
+        return "gemini-1.0-flash"
+
+    except Exception as e:
+        print("Model list error:", e)
+        return "gemini-1.0-flash"
+
+
+# ================================
+# 4. 기본 라우트
 # ================================
 @app.route('/', methods=['GET'])
 def home():
     return "KAL Hiking Bot is running!"
 
 # ================================
-# 4. Kakao Skill 엔드포인트
+# 5. Kakao Skill 엔드포인트
 # ================================
 @app.route('/kakao', methods=['POST'])
 def kakao_skill():
@@ -44,11 +74,15 @@ def kakao_skill():
         if not client:
             return make_kakao_response("Gemini API 키가 설정되지 않았습니다.")
 
+        # 모델 자동 선택
+        model_name = pick_model()
+        print("Using model:", model_name)
+
         # ================================
-        # 🔥 Gemini 최신 모델 호출
+        # 🔥 Gemini 모델 호출
         # ================================
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model=model_name,
             contents=[
                 {"role": "system", "parts": [{"text": SYSTEM_PROMPT}]},
                 {"role": "user", "parts": [{"text": user_message}]}
@@ -56,22 +90,19 @@ def kakao_skill():
         )
 
         # ================================
-        # 🔥 안전 파싱 (SDK 버전 상관없이 항상 작동)
+        # 🔥 안전 파싱
         # ================================
         ai_reply = ""
 
         try:
-            # 1) response.text가 있으면 사용
             if hasattr(response, "text") and response.text:
                 ai_reply = response.text.strip()
 
-            # 2) response.candidates 구조가 있으면 사용
             elif hasattr(response, "candidates") and response.candidates:
                 parts = response.candidates[0].content.parts
                 if parts and hasattr(parts[0], "text"):
                     ai_reply = parts[0].text.strip()
 
-            # 3) 그래도 없으면 fallback
             else:
                 ai_reply = "답변을 생성하지 못했습니다."
 
@@ -86,7 +117,7 @@ def kakao_skill():
         return make_kakao_response("하이킹 대장 로봇입니다. 잠시 후 다시 시도해주세요.")
 
 # ================================
-# 5. Kakao 응답 포맷
+# 6. Kakao 응답 포맷
 # ================================
 def make_kakao_response(text):
     return jsonify({
@@ -103,7 +134,7 @@ def make_kakao_response(text):
     })
 
 # ================================
-# 6. 실행
+# 7. 실행
 # ================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
