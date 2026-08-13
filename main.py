@@ -26,7 +26,6 @@ SYSTEM_PROMPT = (
 # 3. 라우트 설정
 # ================================
 
-# UptimeRobot이 5분마다 핑을 보낼 홈 라우트 (서버 웜업 유지용)
 @app.route('/', methods=['GET'])
 def home():
     return "KAL Hiking Bot is running!"
@@ -44,7 +43,7 @@ def kakao_skill():
         if not client:
             return make_kakao_response("GEMINI API 키 설정이 안 되어 있습니다.")
 
-        # gemini-3.6-flash 적용 및 빠른 응답 설정
+        # 최신 권장 모델 (gemini-3.6-flash) 적용
         response = client.models.generate_content(
             model='gemini-3.6-flash',
             contents=user_message,
