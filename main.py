@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 
 # 텔레그램 토큰 및 Groq API 키
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "텔레그램_토큰_입력")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "8979306686:AAFqBLi3NFyf8GT5O5Ku-oRPPOhrEOpKTVc")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "gsk_yocptA3I4yosUHowNWM3WGdyb3FYM3WC43L1SL34IYWnV0f")
 
 SYSTEM_PROMPT = """너는 애틀랜타 KAL 하이킹팀의 AI 대장이야.
