@@ -5,8 +5,8 @@ import requests
 app = Flask(__name__)
 
 # 텔레그램 토큰 및 Groq API 키( 키는 RENDER dash board 에서 environment 에 있음 render 와 이곳을 모두 수정바람) 
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "9249321679:AAGNfBxlY-GUKgJnSLYDIWIkQO7tbs79S7o")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "gsk_yocptA3I4yosUHowNWM3WGdyb3FYM3WC43L1SL34IYWnV0f")
 
 SYSTEM_PROMPT = """너는 애틀랜타 KAL 하이킹팀의 AI 대장이야.
 회원들에게 일정, 난이도, 준비물, 날씨, 코스 추천을 짧고 친절하게 한국어로 알려줘."""
